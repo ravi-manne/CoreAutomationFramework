@@ -44,9 +44,20 @@ This guide provides a detailed overview of the Core Automation Framework, coveri
 1. **Add Dependency**: Add the core framework dependency in your `build.gradle` file:
     
     ```groovy
-    dependencies {
-        implementation('com.ls:LSATFW:1.0-SNAPSHOT_0.2')  // Replace with the correct version
+    repositories {
+    mavenCentral()
+    maven {
+        url 'https://pkgs.dev.azure.com/liveswitch/_packaging/liveswitchQA/maven/v1'
+        name 'liveswitchQA'
+        credentials(PasswordCredentials)
+        authentication {
+            basic(BasicAuthentication)
+        }
     }
+}
+dependencies {
+    implementation('com.ls:LSATFW:1.0-SNAPSHOT_0.2')  // Replace with the exact group, name, and version
+}
     ```
     
 2. **Repository Authentication**:
