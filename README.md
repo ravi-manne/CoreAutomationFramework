@@ -104,28 +104,6 @@ Generates detailed test reports using ExtentReports:
 
 Define test scenarios and examples in `.feature` files. Example:
 
-```gherkin
-Feature: Validate Join and Drop Functionality
-  @SmokeTest
-  Scenario Outline: Validate chat message <PrimaryMode> - <SecondaryMode>
-    Given I launch application
-    When I join the video chat with the following details:
-      | Name           | Channel   | Mode            |
-      | Primary User   | channel01 | <PrimaryMode>   |
-      | Secondary User | channel01 | <SecondaryMode> |
-    And I validate Chat Messages for "Primary User"
-      | Send Message    |           |
-      | Receive Message |           |
-    And I close the application
-    Examples:
-      | PrimaryMode | SecondaryMode |
-      | SFU         | SFU           |
-      | SFU         | MCU           |
-      | MCU         | SFU           |
-      | MCU         | MCU           |
-```
-
-* * *
 
 ### **TestRunner**
 
