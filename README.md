@@ -1,113 +1,154 @@
-### Core Automation Testing Framework Guide
+**Core Automation Framework User Guide**
+========================================
+
+This guide provides a detailed overview of the Core Automation Framework, covering its features, setup instructions, and steps to reuse the framework in subsequent projects. It includes:
+
+* **Core Framework Overview**
+* **Setup and Configuration**
+* **Feature Files**
+* **TestRunner Configuration**
+* **TestHooks**
+* **Test Execution**
+* **Reporting**
+* **Best Practices**
 
 * * *
 
-#### **Overview**
+**1. Core Framework Overview**
+------------------------------
 
-This document provides a detailed guide for using the automated testing framework. It includes:
+### **Key Features**
 
-* Core framework components and their functionality.
-* Steps to configure the framework for subsequent projects.
-* Feature file, TestRunner, TestHooks, and Gradle setup.
-* Detailed instructions for executing tests.
-
-* * *
-
-### **Core Framework Components**
-
-#### **BrowserFactory**
-
-Manages WebDriver instances for various browsers and platforms:
-
-* **Web Browsers**: Chrome, Firefox, Safari, Edge.
-* **Mobile Platforms**: Android and iOS (via Appium).
-* **Features**:
+1. **Browser Management:**
+    
+    * Supports desktop browsers: Chrome, Firefox, Safari, Edge.
+    * Mobile platforms: Android and iOS (via Appium).
     * Thread-safe WebDriver management.
-    * Dynamic property loading for configurations.
-    * Parallel browser launching for multi-browser testing.
-
-**Key Methods**:
-
-* **`getDriver(String browser)`**: Initializes and returns a `WebDriver` instance for the specified browser.
+    * Parallel browser execution.
+2. **Reporting:**
     
-    ```java
-    WebDriver chromeDriver = BrowserFactory.getDriver("chrome");
-    WebDriver firefoxDriver = BrowserFactory.getDriver("firefox");
-    ```
+    * Generates HTML reports using ExtentReports.
+    * Logs step-by-step test execution.
+    * Provides metadata (Platform, Cluster, Base URL).
+3. **Configuration:**
     
-* **`cleanupDriver(String browser)`**: Closes the specified WebDriver instance.
-    
-    ```java
-    BrowserFactory.cleanupDriver("chrome");
-    ```
-    
-* **`cleanupAllDrivers()`**: Closes all active WebDriver instances.
-    
+    * Centralized `config.properties` file to manage reusable test configurations.
 
 * * *
 
-#### **ExtentManager**
+**2. Setup and Configuration**
+------------------------------
 
-Generates detailed test reports using ExtentReports:
+### **2.1 Gradle Configuration**
 
-* **Features**:
-    * Per-thread test logging.
-    * Customizable metadata (e.g., Platform, Cluster, Base URL).
-    * HTML reporting with timestamps.
-
-**Key Methods**:
-
-* **Initialize reports**:
+1. **Add Dependency**: Add the core framework dependency in your `build.gradle` file:
     
-    ```java
-    ExtentReports extent = ExtentManager.getInstance("Platform", "ClusterName", "https://example.com");
+    ```groovy
+    dependencies {
+        implementation('com.ls:LSATFW:1.0-SNAPSHOT_0.2')  // Replace with the correct version
+    }
     ```
     
-* **Create a new test**:
-    
-    ```java
-    ExtentManager.createTest("Login Test", "Validates login functionality");
-    ```
-    
-* **Finalize and write the report**:
-    
-    ```java
-    ExtentManager.flush();
-    ```
-    
+2. **Repository Authentication**:
+    * Update `gradle.properties`:
+        
+        ```makefile
+        liveswitchQAUsername=liveswitch
+        liveswitchQAPassword=PERSONAL_ACCESS_TOKEN
+        ```
+        
+    * Ensure `gradle.properties` is located in:
+        * macOS/Linux: `/Users/<your-username>/.gradle/gradle.properties`
+        * Windows: `C:\Users\<your-username>\.gradle\gradle.properties`
+    * Add this file to `.gitignore` to prevent exposure of sensitive information.
 
 * * *
 
-### **Setup Instructions**
+### **2.2 Configuration File**
 
-#### **Gradle Configuration**
+The framework uses a centralized `config.properties` file for managing environment-specific and reusable configurations.
 
-1. Locate or create the `gradle.properties` file in the following locations:
-    
-    * **Mac/Linux**: `/Users/<your-username>/.gradle/gradle.properties`
-    * **Windows**: `C:\Users\<your-username>\.gradle\gradle.properties`
-2. Add the following credentials:
-    
-    ```properties
-    liveswitchQAUsername=liveswitch
-    liveswitchQAPassword=PERSONAL_ACCESS_TOKEN
-    ```
-    
-    Replace:
-    
-    * `liveswitchQAUsername` with your Azure DevOps username.
-    * `PERSONAL_ACCESS_TOKEN` with your Azure DevOps PAT (Personal Access Token).
+#### **Example `config.properties` File:**
+
+```properties
+# General configuration
+BROWSER=chrome
+CLUSTER=https://example-cluster-url.com
+
+# Mobile configuration
+ANDROID-DEVICE=emulator-5554
+IOS-DEVICE=your-ios-udid
+
+# Test-specific properties
+TEST_ENVIRONMENT=staging
+REPORT_PATH=AutomationReports/
+```
+
+#### **Purpose of Each Property:**
+
+* **`BROWSER`**: Specifies the browser type (`chrome`, `firefox`, `android`, etc.).
+* **`CLUSTER`**: Specifies the cluster URL for the application under test.
+* **`ANDROID-DEVICE`** and **`IOS-DEVICE`**: Device names or UDID for mobile testing.
+* **`TEST_ENVIRONMENT`**: The environment where tests will run (e.g., staging, production).
+* **`REPORT_PATH`**: The folder where execution reports will be saved.
+
+#### **Usage in the Framework**:
+
+The `config.properties` file values can be dynamically accessed in the code. For example:
+
+```java
+public static String getAndroidDevice() {
+    return getPropertyValue("ANDROID-DEVICE");
+}
+
+private static String getPropertyValue(String property) {
+    String value = null;
+    try {
+        Properties properties = new Properties();
+        FileInputStream file = new FileInputStream("src/test/resources/config.properties");
+        properties.load(file);
+        value = properties.getProperty(property).trim();
+    } catch (IOException ex) {
+        System.out.println(ex.getMessage());
+    }
+    return value;
+}
+```
 
 * * *
 
-### **Feature Files**
+**3. Feature Files**
+--------------------
 
-Define test scenarios and examples in `.feature` files. Example:
+Define scenarios using Gherkin syntax. Example:
 
+```gherkin
+Feature: Validate Join and Drop Functionality
+  @SmokeTest
+  Scenario Outline: Validate chat message <PrimaryMode> - <SecondaryMode>
+    Given I launch application
+    When I join the video chat with the following details:
+      | Name           | Channel   | Mode            |
+      | Primary User   | channel01 | <PrimaryMode>   |
+      | Secondary User | channel01 | <SecondaryMode> |
+    And I validate Chat Messages for "Primary User"
+      | Send Message    |           |
+      | Receive Message |           |
+    And I close the application
+    Examples:
+      | PrimaryMode | SecondaryMode |
+      | SFU         | SFU           |
+      | SFU         | MCU           |
+      | MCU         | SFU           |
+      | MCU         | MCU           |
+```
 
-### **TestRunner**
+* * *
 
-The `TestRunner` class integrates TestNG with Cucumber for executing feature files and generating reports.
+**4. TestRunner Configuration**
+-------------------------------
+
+The TestRunner integrates TestNG with Cucumber for executing feature files and generating reports.
 
 ```java
 package runners;
@@ -119,22 +160,22 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Optional;
 
 @CucumberOptions(
-        features = "src/test/resources/features", // Path to feature files
-        glue = "steps",                           // Step definitions package
-        tags = "@SmokeTest",                      // Tags to filter scenarios
-        plugin = {
-                "pretty",                         // Console output
-                "html:target/cucumber-reports/cucumber.html", // HTML report
-                "json:target/cucumber-reports/cucumber.json", // JSON report
-                "junit:target/cucumber-reports/cucumber.xml"  // JUnit XML report
-        }
+    features = "src/test/resources/features", // Path to feature files
+    glue = "steps",                           // Step definition package
+    tags = "@SmokeTest",                      // Filters scenarios
+    plugin = {
+        "pretty",
+        "html:target/cucumber-reports/cucumber.html",
+        "json:target/cucumber-reports/cucumber.json",
+        "junit:target/cucumber-reports/cucumber.xml"
+    }
 )
 public class TestRunner extends AbstractTestNGCucumberTests {
     @BeforeClass
     public void beforeClass(@Optional String pt) {
         ExtentManager.extent = ExtentManager.getInstance(
             System.getProperty("BROWSER"),
-            System.getProperty("CLUSTER"), 
+            System.getProperty("CLUSTER"),
             ""
         );
     }
@@ -143,9 +184,10 @@ public class TestRunner extends AbstractTestNGCucumberTests {
 
 * * *
 
-### **TestHooks**
+**5. TestHooks**
+----------------
 
-The `TestHooks` class initializes and cleans up resources for each test scenario.
+TestHooks handle scenario-specific setup and teardown, including Appium service initialization.
 
 ```java
 package steps;
@@ -171,9 +213,8 @@ public class TestHooks {
 
     @After
     public void teardown() {
-        if (service != null) {
+        if (service != null)
             service.stop();
-        }
         ExtentManager.flush();
     }
 }
@@ -181,47 +222,48 @@ public class TestHooks {
 
 * * *
 
-### **Execution**
+**6. Test Execution**
+---------------------
 
-Execute the tests using the following command:
+### **Command**
+
+Run the tests using the following Gradle command:
 
 ```bash
 gradle clean test -DsuiteFile=resources/testng.xml -DBROWSER=firefox -DCLUSTER=https://uberchat-rc-apsouth1.liveswitch.io/
 ```
 
-**Parameters**:
+### **Parameters**
 
-* `-DsuiteFile`: Specifies the TestNG suite file to execute.
-* `-DBROWSER`: Specifies the browser for test execution.
-* `-DCLUSTER`: Specifies the cluster (base URL) for the application under test.
-
-* * *
-
-### **Best Practices**
-
-* Define scenarios in `.feature` files using Cucumber Gherkin syntax.
-* Use `BrowserFactory` and `ExtentManager` for browser and reporting management.
-* Add the `TestRunner` class with appropriate `@CucumberOptions`.
-* Run the Gradle command with required parameters.
-* Store settings (e.g., browser type, cluster URLs) in a `config.properties` file.
-* Clean up WebDriver instances using `cleanupDriver()` or `cleanupAllDrivers()`.
+* `-DsuiteFile`: Specifies the TestNG suite file.
+* `-DBROWSER`: Specifies the browser (e.g., `chrome`, `firefox`, `android`).
+* `-DCLUSTER`: Specifies the cluster (application URL).
 
 * * *
 
-### **Reports**
+**7. Reporting**
+----------------
 
-The `ExtentManager` generates detailed HTML reports including:
+The framework uses ExtentReports for HTML-based reporting.
 
-* Test names and descriptions.
-* Step-by-step logs.
-* Pass/fail status for each step.
+### **Features of Reports**:
 
-Reports are saved at:
+* Detailed logs for each test step (pass/fail).
+* Metadata (Platform, Cluster, Browser).
+* Comprehensive status summary.
 
-```bash
-target/cucumber-reports/cucumber.html
+### **Location of Reports**:
+
+Execution reports are available in the folder:  
+**`AutomationReports`**
+
+**Report Files Include:**
+
+* HTML Report: `ExtentReport-<Platform>.html`
+* Cucumber Reports: Generated in `target/cucumber-reports/`
+
+Example for accessing the main report:
+
+```plaintext
+AutomationReports/ExtentReport-Windows.html
 ```
-
-* * *
-
-This document consolidates all the required steps to effectively use the core framework in subsequent projects. Let me know if you need further additions or modifications!
