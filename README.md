@@ -72,7 +72,6 @@ The framework uses a centralized `config.properties` file for managing environme
 
 ```properties
 # General configuration
-BROWSER=chrome
 CLUSTER=https://example-cluster-url.com
 
 # Mobile configuration
