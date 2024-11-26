@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.ls'
-version = '1.0-SNAPSHOT_0.2'
+version = '1.0-SNAPSHOT_0.3'
 
 repositories {
     mavenCentral()
@@ -39,6 +39,9 @@ dependencies {
     api 'com.aventstack:extentreports:5.1.2'
     api 'org.json:json:20210307'
     api 'io.github.bonigarcia:webdrivermanager:5.9.2'
+    api 'org.apache.poi:poi:5.3.0'
+    api 'com.fasterxml.jackson.core:jackson-databind:2.18.1'
+
 
 
 }
